@@ -240,6 +240,14 @@ public abstract class ImageWorker {
             imageViewReference = new WeakReference<ImageView>(imageView);
         }
 
+        @Override protected void onPreExecute(){
+        	super.onPreExecute();
+        	ImageView imageView = getAttachedImageView();
+            if(imageView!=null&&imageView instanceof RecyclingImageView){
+            	((RecyclingImageView)imageView).onLoadStarted();
+            }
+        }
+        
         /**
          * Background processing.
          */
@@ -319,11 +327,20 @@ public abstract class ImageWorker {
             }
 
             final ImageView imageView = getAttachedImageView();
-            if (value != null && imageView != null) {
-                if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "onPostExecute - setting bitmap");
+            if(imageView!=null){
+            	if(imageView instanceof RecyclingImageView){
+                	((RecyclingImageView)imageView).onLoadFinished();
                 }
-                setImageDrawable(imageView, value);
+            	if(value==null){
+                	if(imageView instanceof RecyclingImageView){
+                		((RecyclingImageView)imageView).onFailingLoadBitmap();
+                	}
+                }else {
+                	if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "onPostExecute - setting bitmap");
+                    }
+                    setImageDrawable(imageView, value);
+                }
             }
         }
 

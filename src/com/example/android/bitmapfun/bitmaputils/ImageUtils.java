@@ -3,10 +3,18 @@ package com.example.android.bitmapfun.bitmaputils;
 import java.io.FileDescriptor;
 
 import android.annotation.TargetApi;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.os.Build;
+import android.provider.BaseColumns;
+import android.provider.MediaStore;
+import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
 
 import com.example.android.bitmapfun.BuildConfig;
@@ -179,4 +187,61 @@ public class ImageUtils {
         }
         return inSampleSize;
     }
+    public static Bitmap rotateBitmap(String fileName,Bitmap in){
+		if(in==null) return null;
+		//Rotate bitmap based on orientation
+		Matrix matrix = new Matrix();
+		matrix.postRotate(getBitmapOrientation(fileName));
+		in = Bitmap.createBitmap(in, 0, 0, in.getWidth(), in.getHeight(), matrix, true);
+		return in;
+	}
+	
+	/**
+	 * For getting bitmap orientation by calling ExifInterface
+	 * @param fileName
+	 * @return
+	 */
+	public static int getBitmapOrientation(String fileName){
+		int ori=0;
+		try{
+			ExifInterface exifReader = new ExifInterface(fileName);
+			int orientation = exifReader.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
+			if (orientation == ExifInterface.ORIENTATION_NORMAL) {
+			} else if (orientation == ExifInterface.ORIENTATION_ROTATE_90) {
+				ori=90;
+			} else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) {
+				ori=180;
+			} else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) {
+				ori=270;
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return ori;
+	}
+	
+	
+	/**
+	 * Getting bitmap orientation from gallery
+	 * @param imgId
+	 * @return
+	 */
+	public static int getBitmapOrientation(Context c, Long imgId) {
+		ContentResolver cr = c.getContentResolver();
+		String[] projection = { BaseColumns._ID, ImageColumns.ORIENTATION };
+		String[] vals = { "" + imgId };
+		Cursor cursor = null;
+		try {
+			cursor = cr.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, BaseColumns._ID + "=?", vals, null);
+			if (cursor.moveToFirst()) {
+				int orientation = cursor.getInt(cursor.getColumnIndexOrThrow(ImageColumns.ORIENTATION));
+				return orientation;
+			}
+		} finally {
+			if (null != cursor) {
+				cursor.close();
+			}
+		}
+		return 0;
+	}
 }
