@@ -16,8 +16,17 @@
 
 package com.example.android.bitmapfun.bitmaputils;
 
-import com.example.android.bitmapfun.BuildConfig;
-import com.example.android.bitmapfun.Utils;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.ref.SoftReference;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -33,17 +42,9 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.util.LruCache;
 import android.util.Log;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.ref.SoftReference;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
-import java.util.Iterator;
+import com.example.android.bitmapfun.BuildConfig;
+import com.example.android.bitmapfun.Utils;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
 
 /**
  * This class handles disk and memory caching of bitmaps in conjunction with the
@@ -144,6 +145,9 @@ public class ImageCache {
                 @Override
                 protected void entryRemoved(boolean evicted, String key,
                         BitmapDrawable oldValue, BitmapDrawable newValue) {
+                	if(BuildConfig.DEBUG){
+                		Log.d(TAG, "Memory cache Removed entry:"+key);
+                	}
                     if (RecyclingBitmapDrawable.class.isInstance(oldValue)) {
                         // The removed entry is a recycling drawable, so notify it 
                         // that it has been removed from the memory cache
@@ -218,7 +222,7 @@ public class ImageCache {
      * @param data Unique identifier for the bitmap to store
      * @param value The bitmap drawable to store
      */
-    public void addBitmapToCache(String data, BitmapDrawable value) {
+    public void addBitmapToCache(LoadRequest data, BitmapDrawable value) {
         if (data == null || value == null) {
             return;
         }
@@ -230,13 +234,13 @@ public class ImageCache {
                 // that it has been added into the memory cache
                 ((RecyclingBitmapDrawable) value).setIsCached(true);
             }
-            mMemoryCache.put(data, value);
+            mMemoryCache.put(data.key, value);
         }
-
+        if(data.type!=LoadRequest.TYPE_URL) return;
         synchronized (mDiskCacheLock) {
             // Add to disk cache
             if (mDiskLruCache != null) {
-                final String key = hashKeyForDisk(data);
+                final String key = hashKeyForDisk(data.key);
                 OutputStream out = null;
                 try {
                     DiskLruCache.Snapshot snapshot = mDiskLruCache.get(key);
@@ -334,6 +338,11 @@ public class ImageCache {
             return bitmap;
         }
     }
+    
+    public LruCache<String, BitmapDrawable> getMemoryCache(){
+    	return mMemoryCache;
+    }
+
 
     /**
      * @param options - BitmapFactory.Options with out* options populated

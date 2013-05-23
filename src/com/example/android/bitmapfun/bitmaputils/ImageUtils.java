@@ -1,6 +1,12 @@
 package com.example.android.bitmapfun.bitmaputils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
@@ -11,13 +17,17 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.android.bitmapfun.BuildConfig;
+import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
 
 public class ImageUtils {
@@ -244,4 +254,75 @@ public class ImageUtils {
 		}
 		return 0;
 	}
+	
+	
+	
+	
+
+    /**
+     * Download a bitmap from a URL and write the content to an output stream.
+     *
+     * @param urlString The URL to fetch
+     * @return true if successful, false otherwise
+     */
+    public static boolean downloadUrlToStream(String urlString, OutputStream outputStream,int ioBufferSize) {
+        disableConnectionReuseIfNecessary();
+        HttpURLConnection urlConnection = null;
+        BufferedOutputStream out = null;
+        BufferedInputStream in = null;
+
+        try {
+            final URL url = new URL(urlString);
+            urlConnection = (HttpURLConnection) url.openConnection();
+            in = new BufferedInputStream(urlConnection.getInputStream(), ioBufferSize);
+            out = new BufferedOutputStream(outputStream, ioBufferSize);
+
+            int b;
+            while ((b = in.read()) != -1) {
+                out.write(b);
+            }
+            return true;
+        } catch (final IOException e) {
+            Log.e(TAG, "Error in downloadBitmap - " + e);
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            try {
+                if (out != null) {
+                    out.close();
+                }
+                if (in != null) {
+                    in.close();
+                }
+            } catch (final IOException e) {}
+        }
+        return false;
+    }
+
+    /**
+     * Workaround for bug pre-Froyo, see here for more info:
+     * http://android-developers.blogspot.com/2011/09/androids-http-clients.html
+     */
+    public static void disableConnectionReuseIfNecessary() {
+        // HTTP connection reuse which was buggy pre-froyo
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO) {
+            System.setProperty("http.keepAlive", "false");
+        }
+    }
+    
+    /**
+     * Simple network connection check.
+     *
+     * @param context
+     */
+     public static void checkConnection(Context context) {
+         final ConnectivityManager cm =
+                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+         final NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+         if (networkInfo == null || !networkInfo.isConnectedOrConnecting()) {
+             Toast.makeText(context, R.string.no_network_connection_toast, Toast.LENGTH_LONG).show();
+             Log.e(TAG, "checkConnection - no connection found");
+         }
+     }
 }

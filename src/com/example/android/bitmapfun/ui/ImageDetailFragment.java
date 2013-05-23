@@ -26,8 +26,8 @@ import android.widget.ImageView;
 
 import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
-import com.example.android.bitmapfun.bitmaputils.ImageRemoteFetcher;
 import com.example.android.bitmapfun.bitmaputils.ImageWorker;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
 
 /**
  * This fragment will populate the children of the ViewPager from {@link ImageDetailActivity}.
@@ -36,7 +36,7 @@ public class ImageDetailFragment extends Fragment {
     private static final String IMAGE_DATA_EXTRA = "extra_image_data";
     private String mImageUrl;
     private ImageView mImageView;
-    private ImageRemoteFetcher mImageFetcher;
+    private ImageWorker mImageFetcher;
 
     /**
      * Factory method to generate a new instance of the fragment given an image number.
@@ -86,7 +86,7 @@ public class ImageDetailFragment extends Fragment {
         // cache can be used over all pages in the ViewPager
         if (ImageDetailActivity.class.isInstance(getActivity())) {
             mImageFetcher = ((ImageDetailActivity) getActivity()).getImageFetcher();
-            mImageFetcher.loadImage(mImageUrl, mImageView);
+			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(mImageUrl), mImageView);
         }
 
         // Pass clicks on the ImageView to the parent activity to handle

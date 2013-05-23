@@ -42,8 +42,9 @@ import android.widget.Toast;
 import com.example.android.bitmapfun.BuildConfig;
 import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
-import com.example.android.bitmapfun.bitmaputils.ImageRemoteFetcher;
 import com.example.android.bitmapfun.bitmaputils.ImageCache.ImageCacheParams;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
 import com.example.android.bitmapfun.provider.Images;
 
 /**
@@ -60,7 +61,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
     private int mImageThumbSize;
     private int mImageThumbSpacing;
     private ImageAdapter mAdapter;
-    private ImageRemoteFetcher mImageFetcher;
+    private ImageWorker mImageFetcher;
 
     /**
      * Empty constructor as per the Fragment documentation
@@ -82,7 +83,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
         cacheParams.setMemCacheSizePercent(0.25f); // Set memory cache to 25% of app memory
 
         // The ImageFetcher takes care of loading images into our ImageView children asynchronously
-        mImageFetcher = new ImageRemoteFetcher(getActivity(), mImageThumbSize);
+        mImageFetcher = new ImageWorker(getActivity(), mImageThumbSize);
         mImageFetcher.setLoadingImage(R.drawable.empty_photo);
         mImageFetcher.addImageCache(getActivity().getSupportFragmentManager(), cacheParams);
     }
@@ -284,7 +285,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
 
             // Finally load the image asynchronously into the ImageView, this also takes care of
             // setting a placeholder image while the background thread runs
-            mImageFetcher.loadImage(Images.imageThumbUrls[position - mNumColumns], imageView);
+			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(Images.imageThumbUrls[position - mNumColumns]), imageView);
             return imageView;
         }
 

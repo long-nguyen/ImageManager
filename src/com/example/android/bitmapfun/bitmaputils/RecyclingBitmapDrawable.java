@@ -23,7 +23,7 @@ import android.util.Log;
 
 import com.example.android.bitmapfun.BuildConfig;
 
-/**
+/**This is auto recycling bitmapdrawable when nolonger use, it is used for devices below 2.3
  * A BitmapDrawable that keeps track of whether it is being displayed or cached.
  * When the drawable is no longer being displayed or cached,
  * {@link Bitmap#recycle() recycle()} will be called on this drawable's bitmap.
@@ -82,6 +82,7 @@ public class RecyclingBitmapDrawable extends BitmapDrawable {
     }
 
     private synchronized void checkState() {
+    	 Log.d(LOG_TAG, "Checking state: " + toString()+" Display count is: "+mDisplayRefCount+" cacheCount is:"+mCacheRefCount);
         // If the drawable cache and display ref counts = 0, and this drawable
         // has been displayed, then recycle
         if (mCacheRefCount <= 0 && mDisplayRefCount <= 0 && mHasBeenDisplayed

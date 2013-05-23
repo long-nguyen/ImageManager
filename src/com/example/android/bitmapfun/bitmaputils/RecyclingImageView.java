@@ -29,6 +29,9 @@ import android.widget.ImageView;
  */
 public abstract class RecyclingImageView extends ImageView {
 
+	//TODO: Not yet implement the pending request for
+	
+	
     public RecyclingImageView(Context context) {
         super(context);
     }
@@ -85,7 +88,13 @@ public abstract class RecyclingImageView extends ImageView {
         }
     }
     
-    public abstract void onFailingLoadBitmap();
-    public abstract void onLoadStarted();
-    public abstract void onLoadFinished();
+	public void onFailingLoadBitmap() {
+	};
+
+	public void onLoadStarted() {
+	};
+
+	public void onLoadFinished(){};
+	
+	
 }

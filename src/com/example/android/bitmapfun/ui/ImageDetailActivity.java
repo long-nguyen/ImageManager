@@ -37,7 +37,7 @@ import com.example.android.bitmapfun.BuildConfig;
 import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
 import com.example.android.bitmapfun.bitmaputils.ImageCache;
-import com.example.android.bitmapfun.bitmaputils.ImageRemoteFetcher;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker;
 import com.example.android.bitmapfun.provider.Images;
 
 public class ImageDetailActivity extends FragmentActivity implements OnClickListener {
@@ -45,7 +45,7 @@ public class ImageDetailActivity extends FragmentActivity implements OnClickList
     public static final String EXTRA_IMAGE = "extra_image";
 
     private ImagePagerAdapter mAdapter;
-    private ImageRemoteFetcher mImageFetcher;
+    private ImageWorker mImageFetcher;
     private ViewPager mPager;
 
     @TargetApi(11)
@@ -76,7 +76,7 @@ public class ImageDetailActivity extends FragmentActivity implements OnClickList
         cacheParams.setMemCacheSizePercent(0.25f); // Set memory cache to 25% of app memory
 
         // The ImageFetcher takes care of loading images into our ImageView children asynchronously
-        mImageFetcher = new ImageRemoteFetcher(this, longest);
+        mImageFetcher = new ImageWorker(this, longest);
         mImageFetcher.addImageCache(getSupportFragmentManager(), cacheParams);
         mImageFetcher.setImageFadeIn(false);
 
@@ -167,7 +167,7 @@ public class ImageDetailActivity extends FragmentActivity implements OnClickList
     /**
      * Called by the ViewPager child fragments to load images via the one ImageFetcher
      */
-    public ImageRemoteFetcher getImageFetcher() {
+    public ImageWorker getImageFetcher() {
         return mImageFetcher;
     }
 
