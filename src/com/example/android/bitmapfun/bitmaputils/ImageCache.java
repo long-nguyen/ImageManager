@@ -236,7 +236,7 @@ public class ImageCache {
             }
             mMemoryCache.put(data.key, value);
         }
-        if(data.type!=LoadRequest.TYPE_URL) return;
+        if(data.type!=LoadRequest.TYPE_REMOTE_PATH) return;
         synchronized (mDiskCacheLock) {
             // Add to disk cache
             if (mDiskLruCache != null) {

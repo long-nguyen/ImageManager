@@ -205,6 +205,35 @@ public class ImageUtils {
 		in = Bitmap.createBitmap(in, 0, 0, in.getWidth(), in.getHeight(), matrix, true);
 		return in;
 	}
+    
+    /**
+     *  Rotates the bitmap. If a new bitmap is created, the
+     * @param b: bitmap
+     * @param degrees
+     * @return
+     */
+    // original bitmap is recycled.
+    public static Bitmap rotateBitmap(Bitmap b, int degrees) {
+        if (degrees != 0  && b != null) {
+            Matrix m = new Matrix();
+            if (degrees != 0) {
+                // clockwise
+                m.postRotate(degrees,
+                        (float) b.getWidth() / 2, (float) b.getHeight() / 2);
+            }
+            try {
+                Bitmap b2 = Bitmap.createBitmap(
+                        b, 0, 0, b.getWidth(), b.getHeight(), m, true);
+                if (b != b2) {
+                    b.recycle();
+                    b = b2;
+                }
+            } catch (OutOfMemoryError ex) {
+            	ex.printStackTrace();
+            }
+        }
+        return b;
+    }
 	
 	/**
 	 * For getting bitmap orientation by calling ExifInterface
@@ -229,35 +258,30 @@ public class ImageUtils {
 		}
 		return ori;
 	}
-	
-	
+
 	/**
-	 * Getting bitmap orientation from gallery
-	 * @param imgId
-	 * @return
-	 */
-	public static int getBitmapOrientation(Context c, Long imgId) {
-		ContentResolver cr = c.getContentResolver();
-		String[] projection = { BaseColumns._ID, ImageColumns.ORIENTATION };
-		String[] vals = { "" + imgId };
-		Cursor cursor = null;
-		try {
-			cursor = cr.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, BaseColumns._ID + "=?", vals, null);
-			if (cursor.moveToFirst()) {
-				int orientation = cursor.getInt(cursor.getColumnIndexOrThrow(ImageColumns.ORIENTATION));
-				return orientation;
-			}
-		} finally {
-			if (null != cursor) {
-				cursor.close();
-			}
-		}
-		return 0;
-	}
-	
-	
-	
-	
+ 	 * Getting bitmap orientation from gallery
+ 	 * @param imgId
+ 	 * @return
+ 	 */
+ 	public static int getBitmapOrientation(Context c, Long imgId) {
+ 		ContentResolver cr = c.getContentResolver();
+ 		String[] projection = { BaseColumns._ID, ImageColumns.ORIENTATION };
+ 		String[] vals = { "" + imgId };
+ 		Cursor cursor = null;
+ 		try {
+ 			cursor = cr.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, BaseColumns._ID + "=?", vals, null);
+ 			if (cursor.moveToFirst()) {
+ 				int orientation = cursor.getInt(cursor.getColumnIndexOrThrow(ImageColumns.ORIENTATION));
+ 				return orientation;
+ 			}
+ 		} finally {
+ 			if (null != cursor) {
+ 				cursor.close();
+ 			}
+ 		}
+ 		return 0;
+ 	}
 
     /**
      * Download a bitmap from a URL and write the content to an output stream.
@@ -325,4 +349,31 @@ public class ImageUtils {
              Log.e(TAG, "checkConnection - no connection found");
          }
      }
+     
+     //------------------------------Gallery
+     /**
+      * Get thumbnail
+      * @param imageId :must have
+      * @param size_kind:optional(default is MINI_KIND)
+      * @param prefersize: optional(-1)
+      * @param preferOrientation:optional(-1)
+      * @return
+      */
+     public static Bitmap decodeSampleGalleryThumbnail(Context c,long imageId,int size_kind,int preferSize,int preferOrientation){
+    	BitmapFactory.Options opts = new BitmapFactory.Options();
+		opts.inPreferredConfig = Bitmap.Config.RGB_565;
+		opts.inInputShareable = true;
+		opts.inPurgeable = true;
+		opts.inSampleSize =(preferSize==-1)?1: (384 / preferSize);	//MINI_KIND=512x384
+		Bitmap bmp= MediaStore.Images.Thumbnails.getThumbnail(c.getContentResolver(), imageId,
+				(size_kind==-1)?MediaStore.Images.Thumbnails.MINI_KIND:size_kind, opts);
+		if (null != bmp) {
+			bmp = rotateBitmap(bmp, (preferOrientation==-1)?0:preferOrientation);
+		}
+		return bmp;
+     }
+     
+
+ 	
+     
 }

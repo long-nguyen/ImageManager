@@ -365,7 +365,7 @@ public  class ImageWorker {
 			// Long: Because we already search for mem cache, it is unavaiable,
 			// so we search for diskcache here
 			if (mImageCache != null && !isCancelled() && getAttachedImageView() != null && !mExitTasksEarly
-					&& loadType == LoadRequest.TYPE_URL) {
+					&& loadType == LoadRequest.TYPE_REMOTE_PATH) {
 				
 				bitmap = mImageCache.getBitmapFromDiskCache(key);
 				if (BuildConfig.DEBUG) {
@@ -381,7 +381,7 @@ public  class ImageWorker {
 			// then call the main
 			// process method (as implemented by a subclass)
 			if (bitmap == null && !isCancelled() && getAttachedImageView() != null && !mExitTasksEarly) {
-				bitmap = processBitmap(loadType,key);
+				bitmap = processBitmap(data);
 			}
 
 			// If the bitmap was processed and the image cache is available,
@@ -475,14 +475,12 @@ public  class ImageWorker {
 	 * @param loadRequest
 	 * @return
 	 */
-	public Bitmap processBitmap(int loadType, String key) {
-		switch (loadType) {
-		case LoadRequest.TYPE_FILE_PATH:
-			return ImageUtils.decodeSampledBitmapFromFile(key, mImageWidth, mImageHeight, mImageCache);
-		case LoadRequest.TYPE_RES:
-			return ImageUtils.decodeSampledBitmapFromResource(mResources, Integer.parseInt(key), mImageWidth, mImageHeight, mImageCache);
-		case LoadRequest.TYPE_URL:
-			return decodeSampledBitmapFromNetwork(key);
+	public Bitmap processBitmap(LoadRequest request) {
+		switch (request.type) {
+		case LoadRequest.TYPE_LOCAL_PATH:
+			return ImageUtils.decodeSampledBitmapFromFile(request.key, mImageWidth, mImageHeight, mImageCache);
+		case LoadRequest.TYPE_REMOTE_PATH:
+			return decodeSampledBitmapFromNetwork(request.key);
 		default:
 			break;
 		}
@@ -758,16 +756,15 @@ public  class ImageWorker {
 	 * 
 	 */
 	public static class LoadRequest {
-		public static final int TYPE_URL = 0;
-		public static final int TYPE_FILE_PATH = 1;
-		public static final int TYPE_RES = 2;
+		public static final int TYPE_REMOTE_PATH = 0;
+		public static final int TYPE_LOCAL_PATH = 1;
 		public String key;
 		public int type;
 		
 		public static LoadRequest makeLocalFileRequest(String filePath){
 			LoadRequest	lr=new LoadRequest();
 			lr.key=filePath;
-			lr.type=TYPE_FILE_PATH;
+			lr.type=TYPE_LOCAL_PATH;
 			return lr;
 		}
 		
@@ -775,15 +772,9 @@ public  class ImageWorker {
 			if(!URLUtil.isValidUrl(filePath))  return null;
 			LoadRequest lr=new LoadRequest();
 			lr.key=filePath;
-			lr.type=TYPE_URL;
+			lr.type=TYPE_REMOTE_PATH;
 			return lr;
 		}
 		
-		public static LoadRequest makeResourceRequest(int resId){
-			LoadRequest lr=new LoadRequest();
-			lr.key=String.valueOf(resId);
-			lr.type=TYPE_RES;
-			return lr;
-		}
 	}
 }
