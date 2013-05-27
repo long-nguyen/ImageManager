@@ -22,7 +22,19 @@ public final class R {
     public static final class drawable {
         public static final int empty_photo=0x7f020000;
         public static final int ic_launcher=0x7f020001;
-        public static final int photogrid_list_selector=0x7f020002;
+        public static final int img1=0x7f020002;
+        public static final int img10=0x7f020003;
+        public static final int img11=0x7f020004;
+        public static final int img12=0x7f020005;
+        public static final int img2=0x7f020006;
+        public static final int img3=0x7f020007;
+        public static final int img4=0x7f020008;
+        public static final int img5=0x7f020009;
+        public static final int img6=0x7f02000a;
+        public static final int img7=0x7f02000b;
+        public static final int img8=0x7f02000c;
+        public static final int img9=0x7f02000d;
+        public static final int photogrid_list_selector=0x7f02000e;
     }
     public static final class id {
         public static final int clear_cache=0x7f090005;

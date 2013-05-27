@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -15,7 +16,9 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -29,6 +32,7 @@ import android.widget.Toast;
 import com.example.android.bitmapfun.BuildConfig;
 import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
+import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
 
 public class ImageUtils {
 
@@ -58,7 +62,7 @@ public class ImageUtils {
         options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
 
         // If we're running on Honeycomb or newer, try to use inBitmap
-        if (Utils.hasHoneycomb()) {
+        if (Utils.hasHoneycomb()&&cache!=null) {
             addInBitmapOptions(options, cache);
         }
 
@@ -134,19 +138,19 @@ public class ImageUtils {
     private static void addInBitmapOptions(BitmapFactory.Options options, ImageCache cache) {
         // inBitmap only works with mutable bitmaps so force the decoder to
         // return mutable bitmaps.
-        options.inMutable = true;
+    		options.inMutable = true;
 
-        if (cache != null) {
-            // Try and find a bitmap to use for inBitmap
-            Bitmap inBitmap = cache.getBitmapFromReusableSet(options);
+            if (cache != null) {
+                // Try and find a bitmap to use for inBitmap
+                Bitmap inBitmap = cache.getBitmapFromReusableSet(options);
 
-            if (inBitmap != null) {
-                if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Found bitmap to use for inBitmap");
+                if (inBitmap != null) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "Found bitmap to use for inBitmap");
+                    }
+                    options.inBitmap = inBitmap;
                 }
-                options.inBitmap = inBitmap;
             }
-        }
     }
 
     /**
@@ -170,7 +174,7 @@ public class ImageUtils {
         final int width = options.outWidth;
         int inSampleSize = 1;
 
-        if (height > reqHeight || width > reqWidth) {
+        if ((height > reqHeight || width > reqWidth)&&(reqWidth>0&&reqHeight>0)) {
 
             // Calculate ratios of height and width to requested height and width
             final int heightRatio = Math.round((float) height / (float) reqHeight);
@@ -373,7 +377,33 @@ public class ImageUtils {
 		return bmp;
      }
      
-
+	/**
+	 * Get size of image specified by image request.
+	 * 
+	 * @param req
+	 *            image request.
+	 * @return image dimensions.
+	 */
+	public static Point getImageSize(Resources res,final LoadRequest req) {
+		final Options opts = new Options();
+		opts.inJustDecodeBounds = true;
+		if (req.type ==LoadRequest.TYPE_LOCAL_PATH) {
+			BitmapFactory.decodeFile(req.key, opts);
+		}
+		if (req.type ==LoadRequest.TYPE_LOCAL_RES) {
+			BitmapFactory.decodeResource(res, Integer.parseInt(req.key), opts);
+		}
+		if (req.type == LoadRequest.TYPE_REMOTE_PATH) {
+			try {
+				final InputStream is = new URL(req.key).openStream();
+				BitmapFactory.decodeStream(is, null, opts);
+				is.close();
+			} catch (final Exception e) {
+				// nothing
+			}
+		}
+		return new Point(opts.outWidth, opts.outHeight);
+	}
  	
      
 }

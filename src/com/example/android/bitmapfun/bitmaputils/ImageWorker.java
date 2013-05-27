@@ -27,7 +27,6 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.support.v4.app.FragmentActivity;
@@ -52,8 +51,6 @@ public  class ImageWorker {
 	private static final int HTTP_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
 	private static final String HTTP_CACHE_DIR = "http";
 	private static final int IO_BUFFER_SIZE = 8 * 1024;
-	protected int mImageWidth;
-	protected int mImageHeight;
 	private DiskLruCache mHttpDiskCache;
 	private File mHttpCacheDir;
 	private boolean mHttpDiskCacheStarting = true;
@@ -75,38 +72,11 @@ public  class ImageWorker {
 	private static final int MESSAGE_FLUSH = 2;
 	private static final int MESSAGE_CLOSE = 3;
 
-	protected ImageWorker(Context context) {
+	public ImageWorker(Context context) {
 		mResources = context.getResources();
 		ImageUtils.checkConnection(context);
 		mHttpCacheDir = ImageCache.getDiskCacheDir(context, HTTP_CACHE_DIR);
 	}
-
-	/**
-	 * Initialize providing a single target image size (used for both width and
-	 * height);
-	 * 
-	 * @param context
-	 * @param imageWidth
-	 * @param imageHeight
-	 */
-	public ImageWorker(Context context, int imageWidth, int imageHeight) {
-		this(context);
-		setImageSize(imageWidth, imageHeight);
-	}
-
-	/**
-	 * Initialize providing a single target image size (used for both width and
-	 * height);
-	 * 
-	 * @param context
-	 * @param imageSize
-	 */
-	public ImageWorker(Context context, int imageSize) {
-		this(context);
-		setImageSize(imageSize);
-	}
-
-	
 
 	
 
@@ -154,25 +124,6 @@ public  class ImageWorker {
 	}
 
 	
-	/**
-	 * Set the target image width and height.
-	 * 
-	 * @param width
-	 * @param height
-	 */
-	public void setImageSize(int width, int height) {
-		mImageWidth = width;
-		mImageHeight = height;
-	}
-
-	/**
-	 * Set the target image size (width and height will be the same).
-	 * 
-	 * @param size
-	 */
-	public void setImageSize(int size) {
-		setImageSize(size, size);
-	}
 	
 	/**
 	 * Set placeholder bitmap that shows when the the background thread is
@@ -478,14 +429,20 @@ public  class ImageWorker {
 	public Bitmap processBitmap(LoadRequest request) {
 		switch (request.type) {
 		case LoadRequest.TYPE_LOCAL_PATH:
-			return ImageUtils.decodeSampledBitmapFromFile(request.key, mImageWidth, mImageHeight, mImageCache);
+			return ImageUtils.decodeSampledBitmapFromFile(request.key, request.imgW, request.imgH, mImageCache);
 		case LoadRequest.TYPE_REMOTE_PATH:
-			return decodeSampledBitmapFromNetwork(request.key);
+			return decodeSampledBitmapFromNetwork(request.key,request.imgW,request.imgH);
+		case LoadRequest.TYPE_LOCAL_RES:
+			//TODO:Why inbitmap does not work here
+			return ImageUtils.decodeSampledBitmapFromResource(mResources, Integer.parseInt(request.key), request.imgW, request.imgH,null);
 		default:
 			break;
 		}
 		return null;
 	}
+
+
+
 	
 	/**
      * The main network process method, which will be called by the ImageWorker in the AsyncTask background
@@ -494,7 +451,7 @@ public  class ImageWorker {
      * @param data The data to load the bitmap, in this case, a regular http URL
      * @return The downloaded and resized bitmap
      */
-    private Bitmap decodeSampledBitmapFromNetwork(String url) {
+    private Bitmap decodeSampledBitmapFromNetwork(String url,int reqW,int reqH) {
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "processBitmap - " + url);
         }
@@ -550,8 +507,8 @@ public  class ImageWorker {
 
         Bitmap bitmap = null;
         if (fileDescriptor != null) {
-            bitmap = ImageUtils.decodeSampledBitmapFromDescriptor(fileDescriptor, mImageWidth,
-                    mImageHeight, getImageCache());
+            bitmap = ImageUtils.decodeSampledBitmapFromDescriptor(fileDescriptor, reqW,
+                    reqH, getImageCache());
         }
         if (fileInputStream != null) {
             try {
@@ -593,9 +550,7 @@ public  class ImageWorker {
 			// Transition drawable with a transparent drawable and the final
 			// drawable
 			final TransitionDrawable td = new TransitionDrawable(new Drawable[] {
-					new ColorDrawable(android.R.color.transparent), drawable });
-			// Set background to loading bitmap
-			imageView.setBackgroundDrawable(new BitmapDrawable(mResources, mLoadingBitmap));
+					new BitmapDrawable(mResources,mLoadingBitmap), drawable });
 			imageView.setImageDrawable(td);
 			td.startTransition(FADE_IN_TIME);
 		} else {
@@ -748,23 +703,35 @@ public  class ImageWorker {
 	}
 	/**
 	 * The loadrequest for multiple types of asyncLoad and images caches. Only
-	 * URL(network) types would be cached in disk cache supported type is: + URL for
-	 * network resource + File path(GalleryImage id should be converted to
-	 * filePath), + Resource Id
-	 * 
+	 * URL(network) types would be cached in disk cache supported type is: 
+	 * + URL for network resource 
+	 * + File path(GalleryImage id should be converted to filePath), 
+	 * + Resource Id
+	 * If imageSize is not specified, original imageSize would be used
 	 * @author long-nguyen
 	 * 
 	 */
 	public static class LoadRequest {
 		public static final int TYPE_REMOTE_PATH = 0;
 		public static final int TYPE_LOCAL_PATH = 1;
+		public static final int TYPE_LOCAL_RES = 2;
 		public String key;
 		public int type;
+		public int imgW=-1;
+		public int imgH=-1;
 		
 		public static LoadRequest makeLocalFileRequest(String filePath){
 			LoadRequest	lr=new LoadRequest();
 			lr.key=filePath;
 			lr.type=TYPE_LOCAL_PATH;
+			return lr;
+		}
+		
+
+		public static LoadRequest makeLocalResourceRequest(int resId){
+			LoadRequest	lr=new LoadRequest();
+			lr.key=String.valueOf(resId);
+			lr.type=TYPE_LOCAL_RES;
 			return lr;
 		}
 		
@@ -776,5 +743,24 @@ public  class ImageWorker {
 			return lr;
 		}
 		
+		private static LoadRequest setImageSize(final LoadRequest lrq,int w,int h){
+			if(lrq!=null){
+				lrq.imgH=h;
+				lrq.imgW=w;
+			}
+			return lrq;
+		}
+		
+		public static LoadRequest makeLocalFileRequest(String filePath,int width,int height){
+			return setImageSize(makeLocalFileRequest(filePath), width, height);
+		}
+		
+		public static LoadRequest makeRemoteFileRequest(String filePath,int width,int height){
+			return setImageSize(makeRemoteFileRequest(filePath), width, height);
+		}
+		
+		public static LoadRequest makeLocalResourceRequest(int res,int width,int height){
+			return setImageSize(makeLocalResourceRequest(res), width, height);
+		}
 	}
 }

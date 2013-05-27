@@ -18,6 +18,7 @@ package com.example.android.bitmapfun.ui;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -37,7 +38,7 @@ public class ImageDetailFragment extends Fragment {
     private String mImageUrl;
     private ImageView mImageView;
     private ImageWorker mImageFetcher;
-
+    private int mPreferSize=-1;
     /**
      * Factory method to generate a new instance of the fragment given an image number.
      *
@@ -67,6 +68,19 @@ public class ImageDetailFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mImageUrl = getArguments() != null ? getArguments().getString(IMAGE_DATA_EXTRA) : null;
+        // Fetch screen height and width, to use as our max size when loading images as this
+        // activity runs full screen
+        final DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        final int height = displayMetrics.heightPixels;
+        final int width = displayMetrics.widthPixels;
+
+        // For this sample we'll use half of the longest width to resize our images. As the
+        // image scaling ensures the image is larger than this, we should be left with a
+        // resolution that is appropriate for both portrait and landscape. For best image quality
+        // we shouldn't divide by 2, but this will use more memory and require a larger memory
+        // cache.
+        mPreferSize = (height > width ? height : width) / 2;
     }
 
     @Override
@@ -86,7 +100,7 @@ public class ImageDetailFragment extends Fragment {
         // cache can be used over all pages in the ViewPager
         if (ImageDetailActivity.class.isInstance(getActivity())) {
             mImageFetcher = ((ImageDetailActivity) getActivity()).getImageFetcher();
-			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(mImageUrl), mImageView);
+			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(mImageUrl,mPreferSize,mPreferSize), mImageView);
         }
 
         // Pass clicks on the ImageView to the parent activity to handle

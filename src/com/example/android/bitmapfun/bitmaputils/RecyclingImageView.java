@@ -16,85 +16,116 @@
 
 package com.example.android.bitmapfun.bitmaputils;
 
+import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
+
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
-
 /**
  * Sub-class of ImageView which automatically notifies the drawable when it is
  * being displayed.
  */
-public abstract class RecyclingImageView extends ImageView {
+public class RecyclingImageView extends ImageView {
 
-	//TODO: Not yet implement the pending request for
+	// TODO: Not yet implement the pending request for
+	private LoadRequest mPendingRequest;
+	private ImageWorker mImageWorker;
 	
-	
-    public RecyclingImageView(Context context) {
-        super(context);
-    }
+	public RecyclingImageView(Context context) {
+		super(context);
+	}
 
-    public RecyclingImageView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-    }
+	public RecyclingImageView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+	}
 
-    /**
-     * @see android.widget.ImageView#onDetachedFromWindow()
-     */
-    @Override
-    protected void onDetachedFromWindow() {
-        // This has been detached from Window, so clear the drawable
-        setImageDrawable(null);
+	/**
+	 * @see android.widget.ImageView#onDetachedFromWindow()
+	 */
+	@Override
+	protected void onDetachedFromWindow() {
+		// This has been detached from Window, so clear the drawable
+		setImageDrawable(null);
 
-        super.onDetachedFromWindow();
-    }
+		super.onDetachedFromWindow();
+	}
 
-    /**
-     * @see android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)
-     */
-    @Override
-    public void setImageDrawable(Drawable drawable) {
-        // Keep hold of previous Drawable
-        final Drawable previousDrawable = getDrawable();
+	/**
+	 * @see android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)
+	 */
+	@Override
+	public void setImageDrawable(Drawable drawable) {
+		// Keep hold of previous Drawable
+		final Drawable previousDrawable = getDrawable();
 
-        // Call super to set new Drawable
-        super.setImageDrawable(drawable);
+		// Call super to set new Drawable
+		super.setImageDrawable(drawable);
 
-        // Notify new Drawable that it is being displayed
-        notifyDrawable(drawable, true);
+		// Notify new Drawable that it is being displayed
+		notifyDrawable(drawable, true);
 
-        // Notify old Drawable so it is no longer being displayed
-        notifyDrawable(previousDrawable, false);
-    }
+		// Notify old Drawable so it is no longer being displayed
+		notifyDrawable(previousDrawable, false);
+	}
 
-    /**
-     * Notifies the drawable that it's displayed state has changed.
-     *
-     * @param drawable
-     * @param isDisplayed
-     */
-    private static void notifyDrawable(Drawable drawable, final boolean isDisplayed) {
-        if (drawable instanceof RecyclingBitmapDrawable) {
-            // The drawable is a CountingBitmapDrawable, so notify it
-            ((RecyclingBitmapDrawable) drawable).setIsDisplayed(isDisplayed);
-        } else if (drawable instanceof LayerDrawable) {
-            // The drawable is a LayerDrawable, so recurse on each layer
-            LayerDrawable layerDrawable = (LayerDrawable) drawable;
-            for (int i = 0, z = layerDrawable.getNumberOfLayers(); i < z; i++) {
-                notifyDrawable(layerDrawable.getDrawable(i), isDisplayed);
-            }
-        }
-    }
-    
+	/**
+	 * Notifies the drawable that it's displayed state has changed.
+	 * 
+	 * @param drawable
+	 * @param isDisplayed
+	 */
+	private static void notifyDrawable(Drawable drawable, final boolean isDisplayed) {
+		if (drawable instanceof RecyclingBitmapDrawable) {
+			// The drawable is a CountingBitmapDrawable, so notify it
+			((RecyclingBitmapDrawable) drawable).setIsDisplayed(isDisplayed);
+		} else if (drawable instanceof LayerDrawable) {
+			// The drawable is a LayerDrawable, so recurse on each layer
+			LayerDrawable layerDrawable = (LayerDrawable) drawable;
+			for (int i = 0, z = layerDrawable.getNumberOfLayers(); i < z; i++) {
+				notifyDrawable(layerDrawable.getDrawable(i), isDisplayed);
+			}
+		}
+	}
+
+	/**
+	 * This function will wait for ImageViewSize onLayout to get the correct
+	 * size for imageLoading
+	 * 
+	 * @param worker
+	 * @param request
+	 */
+	public void loadImage(ImageWorker worker, String remoteFilePath) {
+		if (worker == null || remoteFilePath == null)
+			return;
+		if (getWidth() > 0 && getHeight() > 0) {
+			LoadRequest lrq = LoadRequest.makeRemoteFileRequest(remoteFilePath, getWidth(), getHeight());
+			worker.loadImage(lrq, this);
+		} else{
+			mPendingRequest=LoadRequest.makeRemoteFileRequest(remoteFilePath, getWidth(), getHeight());
+			mImageWorker=worker;
+			requestLayout();
+		}
+		
+	}
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
+		if (w > 0 && h > 0 && null != mPendingRequest && null != mImageWorker) {
+			mImageWorker.loadImage(mPendingRequest, this);
+		}
+	}
+
 	public void onFailingLoadBitmap() {
 	};
 
 	public void onLoadStarted() {
 	};
 
-	public void onLoadFinished(){};
-	
-	
+	public void onLoadFinished() {
+	};
+
 }

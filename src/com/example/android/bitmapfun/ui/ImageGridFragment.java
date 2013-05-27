@@ -44,6 +44,7 @@ import com.example.android.bitmapfun.R;
 import com.example.android.bitmapfun.Utils;
 import com.example.android.bitmapfun.bitmaputils.ImageCache.ImageCacheParams;
 import com.example.android.bitmapfun.bitmaputils.ImageWorker;
+import com.example.android.bitmapfun.bitmaputils.RecyclingImageView;
 import com.example.android.bitmapfun.bitmaputils.ImageWorker.LoadRequest;
 import com.example.android.bitmapfun.provider.Images;
 
@@ -83,7 +84,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
         cacheParams.setMemCacheSizePercent(0.25f); // Set memory cache to 25% of app memory
 
         // The ImageFetcher takes care of loading images into our ImageView children asynchronously
-        mImageFetcher = new ImageWorker(getActivity(), mImageThumbSize);
+        mImageFetcher = new ImageWorker(getActivity());
         mImageFetcher.setLoadingImage(R.drawable.empty_photo);
         mImageFetcher.addImageCache(getActivity().getSupportFragmentManager(), cacheParams);
     }
@@ -271,7 +272,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
             // Now handle the main ImageView thumbnails
             ImageView imageView;
             if (convertView == null) { // if it's not recycled, instantiate and initialize
-                imageView = new CustomAsyncImageView(mContext);
+                imageView = new RecyclingImageView(mContext);
                 imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 imageView.setLayoutParams(mImageViewLayoutParams);
             } else { // Otherwise re-use the converted view
@@ -285,7 +286,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
 
             // Finally load the image asynchronously into the ImageView, this also takes care of
             // setting a placeholder image while the background thread runs
-			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(Images.imageThumbUrls[position - mNumColumns]), imageView);
+			mImageFetcher.loadImage(LoadRequest.makeRemoteFileRequest(Images.imageThumbUrls[position - mNumColumns],mImageThumbSize,mImageThumbSize), imageView);
             return imageView;
         }
 
@@ -302,7 +303,7 @@ public class ImageGridFragment extends Fragment implements AdapterView.OnItemCli
             mItemHeight = height;
             mImageViewLayoutParams =
                     new GridView.LayoutParams(LayoutParams.MATCH_PARENT, mItemHeight);
-            mImageFetcher.setImageSize(height);
+            mImageThumbSize=height;
             notifyDataSetChanged();
         }
 
