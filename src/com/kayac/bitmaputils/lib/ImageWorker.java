@@ -176,6 +176,7 @@ public  class ImageWorker {
 		mImageCache = ImageCache.getInstance(activity.getSupportFragmentManager(), mImageCacheParams);
 		new CacheAsyncTask().execute(MESSAGE_INIT_DISK_CACHE);
 	}
+	
 
 	/**
 	 * If set to true, the image will fade-in once it has been loaded by the
@@ -185,6 +186,10 @@ public  class ImageWorker {
 		mFadeInBitmap = fadeIn;
 	}
 
+	/**
+	 * Exit current image downloading task. For example when activity onPause
+	 * @param exitTasksEarly
+	 */
 	public void setExitTasksEarly(boolean exitTasksEarly) {
 		mExitTasksEarly = exitTasksEarly;
 		setPauseWork(false);
@@ -696,14 +701,23 @@ public  class ImageWorker {
 		}
 	}
 
+	/**
+	 * Clear all memory caches
+	 */
 	public void clearCache() {
 		new CacheAsyncTask().execute(MESSAGE_CLEAR);
 	}
 
+	/**
+	 * Clear all disk caches
+	 */
 	public void flushCache() {
 		new CacheAsyncTask().execute(MESSAGE_FLUSH);
 	}
 
+	/**
+	 * Close all connection to caches
+	 */
 	public void closeCache() {
 		new CacheAsyncTask().execute(MESSAGE_CLOSE);
 	}
